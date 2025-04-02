@@ -8,6 +8,7 @@ from internal import *
 if sys.platform:
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
+# Исключения будем писать в лог целиком
 @logger.catch()
 async def main():
     async with OKX() as okx:

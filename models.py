@@ -6,12 +6,17 @@ from config import *
 from operator import itemgetter
 from abc import ABC, abstractmethod
 
-
+""" Список сущностей бирж """
 EXCHANGES_LIST = []
+
 T = TypeVar('T')
 
 class Exchange(ABC):
-
+    """ Класс представляет собой интерфейс для каждой биржи. При инициализации каждой биржи, её объект сразу будет
+        назван по её классу и помещён в список EXCHANGES_LIST. У каждого объекта биржи создается словарь с названием
+        тикера и значением в виде списка [бид, аск]. Класс абстрактный, чтобы нельзя было создать экземпляр, а только
+        лишь экзепляр класса-наследника в виде конкретной реализованной биржи. Также создается сессия
+    """
     def __init__(self):
         self.__name = self.__class__.__name__
         self.coins = {}
@@ -32,6 +37,7 @@ class Exchange(ABC):
                 await self.__session.close()
             self.session = None
 
+    """ Метод get_prices получает данные с биржи и обновляет значение поля coins """
     @abstractmethod
     async def get_prices(self, retries: int = 3, delay: int = 1) -> Dict[str, List[str]]:
         pass
@@ -140,6 +146,12 @@ class Bybit(Exchange):
                 await asyncio.sleep(delay)
         return self.coins
 
+""" Функция update_coins_dicts принимает список экземпляров бирж, находит список пересечений по тикерам и помещает в
+    переменную updated_keys_list, а затем обновляет поле coins для каждоый биржи, чтобы там находились только те монеты
+    со значениями цен, которые есть на каждой бирже
+"""
+#   Вместо генерации словаря использовал itemgetter из модуля operator, так как скорость этой функции критически важна
+#   для арбитража. itemgetter быстрее генерации словаря примерно в полтора раза, насколько я понял
 
 async def update_coins_dicts(exchanges: List[Exchange]) -> None:
     updated_keys_list = list(exchanges[0].coins.keys())
@@ -150,7 +162,6 @@ async def update_coins_dicts(exchanges: List[Exchange]) -> None:
     for exchange in exchanges:
         d = dict(zip(updated_keys_list, itemgetter(*updated_keys_list)(exchange.coins)))
         exchange.coins = d
-        print(exchange.coins)
     return None
 
 
