@@ -2,6 +2,7 @@ from models import *
 import asyncio
 import sys
 from internal import *
+from middleware import *
 
 
 # Опционально для Windows
@@ -9,6 +10,7 @@ if sys.platform:
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 # Исключения будем писать в лог целиком
+@async_error_catcher
 @logger.catch()
 async def main():
 

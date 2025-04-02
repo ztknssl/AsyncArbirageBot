@@ -5,6 +5,7 @@ from logger import logger
 from config import *
 from operator import itemgetter
 from abc import ABC, abstractmethod
+from middleware import *
 
 """ Список сущностей бирж """
 EXCHANGES_LIST = []
@@ -15,8 +16,17 @@ class Exchange(ABC):
     """ Класс представляет собой интерфейс для каждой биржи. При инициализации каждой биржи, её объект сразу будет
         назван по её классу и помещён в список EXCHANGES_LIST. У каждого объекта биржи создается словарь с названием
         тикера и значением в виде списка [бид, аск]. Класс абстрактный, чтобы нельзя было создать экземпляр, а только
-        лишь экзепляр класса-наследника в виде конкретной реализованной биржи. Также создается сессия
+        лишь экзепляр класса-наследника в виде конкретной реализованной биржи. Также создается сессия. Реализован
+        паттерн Singleton, чтобы создавать можно было лишь один инстанс для каждой биржи
     """
+
+    _instances = {}
+
+    def __new__(cls, *args, **kwargs):
+        if cls not in cls._instances:
+            cls._instances[cls] = super().__new__(cls)
+        return cls._instances[cls]
+
     def __init__(self):
         self.__name = self.__class__.__name__
         self.coins = {}
@@ -53,6 +63,7 @@ class OKX(Exchange):
                 await self.__session.close()
             self.session = None
 
+    @async_error_catcher
     async def get_prices(self, retries: int=3, delay: int=1) -> Dict[str, List[str]]:
 
         for attempt in range(retries):
@@ -88,6 +99,7 @@ class Binance(Exchange):
                 await self.__session.close()
             self.session = None
 
+    @async_error_catcher
     async def get_prices(self, retries: int=3, delay: int=1) -> Dict[str, List[str]]:
 
         for attempt in range(retries):
@@ -123,6 +135,7 @@ class Bybit(Exchange):
                 await self.__session.close()
             self.session = None
 
+    @async_error_catcher
     async def get_prices(self, retries: int=3, delay: int=1) -> Dict[str, List[str]]:
 
         for attempt in range(retries):
@@ -153,6 +166,7 @@ class Bybit(Exchange):
 #   Вместо генерации словаря использовал itemgetter из модуля operator, так как скорость этой функции критически важна
 #   для арбитража. itemgetter быстрее генерации словаря примерно в полтора раза, насколько я понял
 
+@async_error_catcher
 async def update_coins_dicts(exchanges: List[Exchange]) -> None:
     updated_keys_list = list(exchanges[0].coins.keys())
 
@@ -163,7 +177,3 @@ async def update_coins_dicts(exchanges: List[Exchange]) -> None:
         d = dict(zip(updated_keys_list, itemgetter(*updated_keys_list)(exchange.coins)))
         exchange.coins = d
     return None
-
-
-
-
