@@ -11,6 +11,7 @@ if sys.platform:
 # Исключения будем писать в лог целиком
 @logger.catch()
 async def main():
+
     async with OKX() as okx:
         await okx.get_prices()
 
@@ -26,4 +27,9 @@ async def main():
     await asyncio.gather(task_1, task_2)
 
 
-asyncio.run(main())
+
+if __name__ == "__main__":
+    try:
+        asyncio.run(main())
+    except Exception as err:
+        print(f"Critical error: {err}")
